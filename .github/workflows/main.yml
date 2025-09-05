@@ -1,0 +1,30 @@
+# A simple action usage
+name: Build Kernel X01BD 4.19 ksu-susfs
+on:
+  workflow_dispatch:
+
+jobs:
+  Build-Kernel:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Build Kernel X01BD 4.19 ksu-susfs
+        uses: dabao1955/kernel_build_action@main
+        with:
+          kernel-url: https://github.com/muralivijay/android_kernel_asus_sdm660-4.19/
+          kernel-dir: msm-4.19
+          kernel-branch: Ratibor-Rebased-Murali
+          config: asus/X01BD_defconfig
+          arch: arm64
+          aosp-gcc: true
+          aosp-clang: true
+          ksu-other: true
+          ksu-url: https://github.com/muralivijay/KernelSU-Next
+          aosp-clang-version: r547379
+          anykernel3: true
+          anykernel3-url: https://github.com/muralivijay/AnyKernel3
+          extra-cmd: LLVM=1 LLVM_IAS=1
