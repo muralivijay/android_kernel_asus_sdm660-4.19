@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Build Kernel X01BD 4.19 ksu-susfs
-        uses: dabao1955/kernel_build_action@main
+        uses: muralivijay/kernel_build_action@main
         with:
           kernel-url: https://github.com/muralivijay/android_kernel_asus_sdm660-4.19/
           kernel-dir: msm-4.19
@@ -26,5 +26,6 @@ jobs:
           ksu-url: https://github.com/muralivijay/KernelSU-Next
           aosp-clang-version: r547379
           anykernel3: true
-          anykernel3-url: https://github.com/muralivijay/AnyKernel3
+          anykernel3-url: https://github.com/muralivijay/AnyKernel3.git
+          anykernel3-branch: X01BD
           extra-cmd: LLVM=1 LLVM_IAS=1
