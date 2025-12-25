@@ -2,6 +2,9 @@
 name: Build Kernel X01BD 4.19 ksu-susfs
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - Ratibor-Rebased-Murali
 
 jobs:
   Build-Kernel:
