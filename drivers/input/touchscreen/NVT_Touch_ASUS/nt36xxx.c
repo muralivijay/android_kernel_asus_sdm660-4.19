@@ -18,6 +18,7 @@
  */
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/kobject.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/gpio.h>
@@ -241,6 +242,80 @@ const uint16_t gesture_key_array[] = {
 #define NVT_GESTURE_MODE "tpd_gesture"
 
 static long gesture_mode = 0;
+long screen_gesture = 0;
+struct kobject *gesture_kobject;
+
+static ssize_t gesture_show(struct kobject *kobj, struct kobj_attribute *attr,
+                      char *buf)
+{
+	return sprintf(buf, "%d\n", gesture_mode);
+}
+
+static ssize_t gesture_store(struct kobject *kobj, struct kobj_attribute *attr,
+                      char *buf, size_t count)
+{
+	sscanf(buf, "%du", &gesture_mode);
+	if (gesture_mode == 0) {
+		gesture_mode = 0;
+	} else {
+		gesture_mode = 0x1FF;
+	}
+	NVT_LOG("gesture_mode = 0x%x\n", (unsigned int)gesture_mode);
+	return count;
+}
+
+static struct kobj_attribute gesture_attribute = __ATTR(dclicknode, 0664, gesture_show,
+                                                   gesture_store);
+
+static ssize_t screengesture_show(struct kobject *kobj, struct kobj_attribute *attr,
+                      char *buf)
+{
+        return sprintf(buf, "%d\n", screen_gesture);
+}
+
+static ssize_t screengesture_store(struct kobject *kobj, struct kobj_attribute *attr,
+                      char *buf, size_t count)
+{
+	sscanf(buf, "%du", &screen_gesture);
+	if (screen_gesture == 0) {
+		gesture_mode = 0;
+	} else {
+		gesture_mode = 0x1FF;
+	}
+	NVT_LOG("gesture_mode = 0x%x\n", (unsigned int)gesture_mode);
+	return count;
+}
+
+static struct kobj_attribute screengesture_attribute = __ATTR(gesture_node, 0664, screengesture_show,
+                                                   screengesture_store);
+
+int create_gesture_node(void) {
+	int error = 0, error2 = 0;
+
+        gesture_kobject = kobject_create_and_add("touchpanel",
+                                                 kernel_kobj);
+        if(!gesture_kobject)
+                return -ENOMEM;
+
+        NVT_LOG("[Nvt-ts] : Gesture Node initialized successfully \n");
+
+        error = sysfs_create_file(gesture_kobject, &gesture_attribute.attr);
+
+        if (error) {
+                NVT_LOG("[Nvt-ts] : failed to create the gesture_node file in /sys/kernel/touchpanel \n");
+        }
+
+        error2 = sysfs_create_file(gesture_kobject, &screengesture_attribute.attr);
+        if (error) {
+                NVT_LOG("[Nvt-ts] : failed to create the gesture_node file in /sys/kernel/touchpanel \n");
+        }
+
+        return error;
+}
+
+void destroy_gesture(void) {
+	kobject_put(gesture_kobject);
+}
 
 static ssize_t nvt_gesture_mode_get_proc(struct file *file,
                         char __user *buffer, size_t size, loff_t *ppos)
@@ -1336,6 +1411,7 @@ return:
 static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int32_t ret = 0;
+	int er = 0;
 #if ((TOUCH_KEY_NUM > 0) || WAKEUP_GESTURE)
 	int32_t retry = 0;
 #endif
@@ -1535,6 +1611,7 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 #endif
 
 #if WAKEUP_GESTURE
+	er = create_gesture_node();
 	nvt_gesture_mode_proc = proc_create(NVT_GESTURE_MODE, 0666, NULL,
 				&gesture_mode_proc_ops);
 	if (!nvt_gesture_mode_proc) {
@@ -2070,10 +2147,11 @@ return:
 ********************************************************/
 static void __exit nvt_driver_exit(void)
 {
-#ifdef NVT_POWER_SOURCE_CUST_EN	
+#ifdef NVT_POWER_SOURCE_CUST_EN
 	nvt_lcm_bias_power_deinit(ts);
 #endif
 	i2c_del_driver(&nvt_i2c_driver);
+	destroy_gesture();
 }
 
 //late_initcall(nvt_driver_init);
